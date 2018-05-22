@@ -23,3 +23,15 @@
 hs_err_pid*
 /.gitignore
 .idea/*.xml
+/target
+META-INF/
+smartweb.iml
+src/main/resources/
+src/test/
+target/generated-sources/
+target/maven-status/
+target/smartweb-0.0.1/META-INF/
+target/smartweb-0.0.1/WEB-INF/jsp/
+target/smartweb-0.0.1/WEB-INF/web.xml
+target/smartweb-0.0.1/hello.jsp
+target/tmp/jsp/org/apache/jsp/WEB_002dINF/jsp/hello_jsp.java
