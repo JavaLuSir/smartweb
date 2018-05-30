@@ -1,15 +1,23 @@
 package com.luxinx.test;
 
 
+import com.luxinx.helper.DataBaseHelper;
 import com.luxinx.model.Customer;
 
+import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
 public class CustomerService {
 
     public List<Customer> getCustomerList(String keyword){
-        return null;
+        Connection conn = DataBaseHelper.getConnection();
+        String sql ="select * from customer";
+        try {
+            return DataBaseHelper.queryEntityList(conn,Customer.class,sql);
+        } finally {
+            DataBaseHelper.closeConnection(conn);
+        }
     }
 
     public Customer getCustomer(long id){
