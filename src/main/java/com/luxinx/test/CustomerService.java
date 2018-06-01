@@ -11,12 +11,11 @@ import java.util.Map;
 public class CustomerService {
 
     public List<Customer> getCustomerList(String keyword){
-        Connection conn = DataBaseHelper.getConnection();
         String sql ="select * from customer";
         try {
-            return DataBaseHelper.queryEntityList(conn,Customer.class,sql);
+            return DataBaseHelper.queryEntityList(Customer.class,sql);
         } finally {
-            DataBaseHelper.closeConnection(conn);
+            DataBaseHelper.closeConnection();
         }
     }
 
