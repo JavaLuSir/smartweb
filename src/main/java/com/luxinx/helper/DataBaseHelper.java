@@ -2,7 +2,6 @@ package com.luxinx.helper;
 
 import com.luxinx.util.CollectionUtil;
 import com.luxinx.util.PropsUtil;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
@@ -17,6 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+/**
+ * DatabaseHelper is used to operate Database with insert update delete and Entity
+ * Operate insertEntity updateEntity deleteEntity
+ */
 public class DataBaseHelper {
 
 
@@ -45,6 +48,14 @@ public class DataBaseHelper {
 
     private static final QueryRunner QUERY_RUNNER = new QueryRunner();
 
+    /**
+     * use sql to query EntityList
+     * @param entityClass Class<T> entityClass
+     * @param sql use prepared sql grammar with this param
+     * @param params sql's param is use to query sql
+     * @param <T> entityClass type
+     * @return return entityClass type
+     */
     public static <T> List<T> queryEntityList(Class<T> entityClass, String sql, Object... params) {
         Connection conn = getConnection();
         List<T> entityList;
@@ -59,6 +70,10 @@ public class DataBaseHelper {
         return entityList;
     }
 
+    /**
+     * this method use to get Connection Object from database
+     * @return
+     */
     public static Connection getConnection() {
         Connection connection = CONNECTION_HOLDER.get();
         try {
@@ -73,11 +88,19 @@ public class DataBaseHelper {
         return connection;
     }
 
+    /**
+     * query sql to query single Entity
+     * @param entityClass EntityClass type
+     * @param sql use prepared grammar with this param
+     * @param params the param of the sql prepared
+     * @param <T>
+     * @return EntityClass type
+     */
     public static <T> T queryEntity(Class<T> entityClass, String sql, Object... params) {
         T entity = null;
         try {
             Connection connection = getConnection();
-            QUERY_RUNNER.query(connection, sql, new BeanHandler<T>(entityClass), params);
+            entity = QUERY_RUNNER.query(connection, sql, new BeanHandler<T>(entityClass), params);
         } catch (SQLException e) {
             LOG.error("query bean failed !", e);
             throw new RuntimeException(e);
@@ -87,6 +110,13 @@ public class DataBaseHelper {
         return entity;
     }
 
+    /**
+     * insert into a row data into database
+     * @param entityClass entityClass.class
+     * @param filedMap the value of the entity
+     * @param <T>
+     * @return true success;false insert failed
+     */
     public static <T> boolean insertEntity(Class<T> entityClass, Map<String, Object> filedMap) {
         if (CollectionUtil.isEmpty(filedMap)) {
             LOG.error("can 't insert Entity because Map is empty!");
@@ -107,6 +137,14 @@ public class DataBaseHelper {
         return executeUpdate(sql, params) == 1;
     }
 
+    /**
+     * the method is used to update Entity
+     * @param entityClass user entityClass
+     * @param id the id of entityClass
+     * @param fieldMap the value will to update
+     * @param <T> entityClass
+     * @return true update success;false update failed
+     */
     public static <T> boolean updateEntity(Class<T> entityClass, long id, Map<String, Object> fieldMap) {
         if (CollectionUtil.isEmpty(fieldMap)) {
             LOG.error("can 't insert Entity because Map is empty!");
@@ -124,16 +162,33 @@ public class DataBaseHelper {
         return executeUpdate(sql) == 1;
     }
 
+    /**
+     * delete an entity use id
+     * @param entityClass entityClass
+     * @param id union symble with
+     * @param <T>
+     * @return true delete success;false delete faild
+     */
     public static <T> boolean deleteEntity(Class<T> entityClass,long id){
         String sql = "delete from "+getTableName(entityClass)+" where id=?";
         return executeUpdate(sql,id)==1;
     }
 
+    /**
+     * get Table from entityClass
+     * @param entityClass the entity of dataTable
+     * @return tablename
+     */
     private static String getTableName(Class<?> entityClass) {
         return entityClass.getSimpleName();
     }
 
-
+    /**
+     * use this method to executeQuery Method get a List<Map<String,Object>></String,Object>
+     * @param sql the sql is used to select entity
+     * @param params the params of sql
+     * @return the data in List<Map<String, Object>> type
+     */
     public static List<Map<String, Object>> executeQuery(String sql, Object... params) {
         Connection connection = getConnection();
         List<Map<String, Object>> result = null;
@@ -149,6 +204,12 @@ public class DataBaseHelper {
         return result;
     }
 
+    /**
+     * use this method to update database data
+     * @param sql use prepared grammar
+     * @param params the param of sql
+     * @return affect rows num
+     */
     public static int executeUpdate(String sql, Object... params) {
         Connection connection = getConnection();
         int result = 0;
@@ -163,6 +224,9 @@ public class DataBaseHelper {
         return result;
     }
 
+    /**
+     * release Connection Object
+     */
     public static void closeConnection() {
         Connection connection = CONNECTION_HOLDER.get();
         if (connection != null) {

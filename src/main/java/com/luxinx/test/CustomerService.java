@@ -4,7 +4,6 @@ package com.luxinx.test;
 import com.luxinx.helper.DataBaseHelper;
 import com.luxinx.model.Customer;
 
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
@@ -20,17 +19,18 @@ public class CustomerService {
     }
 
     public Customer getCustomer(long id){
-        return null;
+        String sql = "SELECT * from customer where id=?";
+        return DataBaseHelper.queryEntity(Customer.class,sql,id);
     }
 
     public boolean createCustomer(Map<String, Object> fieldMap){
-        return false;
+        return DataBaseHelper.insertEntity(Customer.class,fieldMap);
     }
 
     public boolean updateCustomer(long id , Map<String, Object> fieldMap){
-        return false;
+        return DataBaseHelper.updateEntity(Customer.class,id,fieldMap);
     }
     public boolean deleteCustomer(long id){
-        return false;
+        return DataBaseHelper.deleteEntity(Customer.class,id);
     }
 }
