@@ -2,14 +2,18 @@ package com.luxinx.helper;
 
 import com.luxinx.util.CollectionUtil;
 import com.luxinx.util.PropsUtil;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.log4j.Logger;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +30,7 @@ public class DataBaseHelper {
     private static final Logger LOG = Logger.getLogger(DataBaseHelper.class);
 
     private static final ThreadLocal<Connection> CONNECTION_HOLDER = new ThreadLocal<>();
+    private static final BasicDataSource DATA_SOURCE;
 
     private static final String DRIVER;
     private static final String URL;
@@ -33,11 +38,17 @@ public class DataBaseHelper {
     private static final String PASSWORD;
 
     static {
+
         Properties props = PropsUtil.loadProperties("config.properties");
+        DATA_SOURCE = new BasicDataSource();
         DRIVER = props.getProperty("jdbc.driver");
         URL = props.getProperty("jdbc.url");
         USERNAME = props.getProperty("jdbc.username");
         PASSWORD = props.getProperty("jdbc.password");
+        DATA_SOURCE.setDriverClassName(DRIVER);
+        DATA_SOURCE.setUrl(URL);
+        DATA_SOURCE.setUsername(USERNAME);
+        DATA_SOURCE.setPassword(PASSWORD);
 
         try {
             Class.forName(DRIVER);
@@ -50,10 +61,11 @@ public class DataBaseHelper {
 
     /**
      * use sql to query EntityList
+     *
      * @param entityClass Class<T> entityClass
-     * @param sql use prepared sql grammar with this param
-     * @param params sql's param is use to query sql
-     * @param <T> entityClass type
+     * @param sql         use prepared sql grammar with this param
+     * @param params      sql's param is use to query sql
+     * @param <T>         entityClass type
      * @return return entityClass type
      */
     public static <T> List<T> queryEntityList(Class<T> entityClass, String sql, Object... params) {
@@ -64,21 +76,20 @@ public class DataBaseHelper {
         } catch (SQLException e) {
             LOG.error("query entity list failed", e);
             throw new RuntimeException(e);
-        } finally {
-            closeConnection();
         }
         return entityList;
     }
 
     /**
      * this method use to get Connection Object from database
+     *
      * @return
      */
     public static Connection getConnection() {
         Connection connection = CONNECTION_HOLDER.get();
         try {
             if (connection == null) {
-                connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+                connection = DATA_SOURCE.getConnection();
             }
         } catch (SQLException e) {
             LOG.error("get connection failed!", e);
@@ -90,9 +101,10 @@ public class DataBaseHelper {
 
     /**
      * query sql to query single Entity
+     *
      * @param entityClass EntityClass type
-     * @param sql use prepared grammar with this param
-     * @param params the param of the sql prepared
+     * @param sql         use prepared grammar with this param
+     * @param params      the param of the sql prepared
      * @param <T>
      * @return EntityClass type
      */
@@ -104,16 +116,15 @@ public class DataBaseHelper {
         } catch (SQLException e) {
             LOG.error("query bean failed !", e);
             throw new RuntimeException(e);
-        } finally {
-            closeConnection();
         }
         return entity;
     }
 
     /**
      * insert into a row data into database
+     *
      * @param entityClass entityClass.class
-     * @param filedMap the value of the entity
+     * @param filedMap    the value of the entity
      * @param <T>
      * @return true success;false insert failed
      */
@@ -139,15 +150,16 @@ public class DataBaseHelper {
 
     /**
      * the method is used to update Entity
+     *
      * @param entityClass user entityClass
-     * @param id the id of entityClass
-     * @param fieldMap the value will to update
-     * @param <T> entityClass
+     * @param id          the id of entityClass
+     * @param fieldMap    the value will to update
+     * @param <T>         entityClass
      * @return true update success;false update failed
      */
     public static <T> boolean updateEntity(Class<T> entityClass, long id, Map<String, Object> fieldMap) {
         if (CollectionUtil.isEmpty(fieldMap)) {
-            LOG.error("can 't insert Entity because Map is empty!");
+            LOG.error("can 't update Entity because Map is empty!");
             return false;
         }
         String sql = "update " + getTableName(entityClass) + " set ";
@@ -159,33 +171,36 @@ public class DataBaseHelper {
         List<Object> paramsList = new ArrayList<>();
         paramsList.addAll(fieldMap.values());
         paramsList.add(id);
-        return executeUpdate(sql) == 1;
+        return executeUpdate(sql,paramsList.toArray()) == 1;
     }
 
     /**
      * delete an entity use id
+     *
      * @param entityClass entityClass
-     * @param id union symble with
+     * @param id          union symble with
      * @param <T>
      * @return true delete success;false delete faild
      */
-    public static <T> boolean deleteEntity(Class<T> entityClass,long id){
-        String sql = "delete from "+getTableName(entityClass)+" where id=?";
-        return executeUpdate(sql,id)==1;
+    public static <T> boolean deleteEntity(Class<T> entityClass, long id) {
+        String sql = "delete from " + getTableName(entityClass) + " where id=?";
+        return executeUpdate(sql, id) == 1;
     }
 
     /**
      * get Table from entityClass
+     *
      * @param entityClass the entity of dataTable
      * @return tablename
      */
     private static String getTableName(Class<?> entityClass) {
-        return entityClass.getSimpleName();
+        return entityClass.getSimpleName().toLowerCase();
     }
 
     /**
      * use this method to executeQuery Method get a List<Map<String,Object>></String,Object>
-     * @param sql the sql is used to select entity
+     *
+     * @param sql    the sql is used to select entity
      * @param params the params of sql
      * @return the data in List<Map<String, Object>> type
      */
@@ -198,15 +213,14 @@ public class DataBaseHelper {
         } catch (SQLException e) {
             LOG.error("execute Query Failed !", e);
             throw new RuntimeException(e);
-        } finally {
-            closeConnection();
         }
         return result;
     }
 
     /**
      * use this method to update database data
-     * @param sql use prepared grammar
+     *
+     * @param sql    use prepared grammar
      * @param params the param of sql
      * @return affect rows num
      */
@@ -218,8 +232,6 @@ public class DataBaseHelper {
         } catch (SQLException e) {
             LOG.error("update Failed !", e);
             throw new RuntimeException(e);
-        } finally {
-            closeConnection();
         }
         return result;
     }
@@ -237,6 +249,20 @@ public class DataBaseHelper {
             } finally {
                 CONNECTION_HOLDER.remove();
             }
+        }
+    }
+
+    public static void executeSqlFile(String filePath) {
+        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("sql/customer_init.sql");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        try {
+            String sql = null;
+            while ((sql = reader.readLine()) != null) {
+                executeUpdate(sql);
+            }
+        } catch (IOException e) {
+            LOG.error("execute sql file failed!", e);
+            throw new RuntimeException(e);
         }
     }
 

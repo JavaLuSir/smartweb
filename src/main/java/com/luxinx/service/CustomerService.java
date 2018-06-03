@@ -1,4 +1,4 @@
-package com.luxinx.test;
+package com.luxinx.service;
 
 
 import com.luxinx.helper.DataBaseHelper;
